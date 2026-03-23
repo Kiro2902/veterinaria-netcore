@@ -8,7 +8,7 @@ namespace VeterinariaWeb.Controllers
 {
     public class ProductosController : Controller
     {
-        private readonly string cadenaConexion = "Server=localhost;database=veterinaria;User Id=APPData;password=123456;TrustServerCertificate=true";
+        private readonly string cadenaConexion = "Server=(localdb)\\MSSQLLocalDB; Database=veterinaria; User id=admin; Password=sqladmin; TrustServerCertificate=true";
 
         public IActionResult Index(int page = 1, string? categoria = null, string? producto = null)
         {
