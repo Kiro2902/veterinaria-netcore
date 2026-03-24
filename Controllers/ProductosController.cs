@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
+using VeterinariaWeb.Data.Infrastructure;
+using VeterinariaWeb.Data.Repositories;
 using VeterinariaWeb.Models;
 using VeterinariaWeb.ViewModels;
 
@@ -8,17 +10,24 @@ namespace VeterinariaWeb.Controllers
 {
     public class ProductosController : Controller
     {
-        private readonly string cadenaConexion = "Server=(localdb)\\MSSQLLocalDB; Database=veterinaria; User id=admin; Password=sqladmin; TrustServerCertificate=true";
+        private readonly ICategoria _categoriaDB;
+        private readonly IProducto _productoDB;
+
+        public ProductosController(ICategoria categoria, IProducto producto)
+        {
+            _categoriaDB = categoria;
+            _productoDB = producto;
+        }
 
         public IActionResult Index(int page = 1, string? categoria = null, string? producto = null)
         {
-            var listaProductos = obtenerProductos();
+            var listaProductos = _productoDB.Listar();
             if (categoria != null)
                 listaProductos = listaProductos.Where(p => p.CategoriaID == Convert.ToInt32(categoria)).ToList();
             if (producto != null)
                 listaProductos = listaProductos.Where(p => p.Nombre.ToLower().Contains(producto.ToLower()) || 
                         p.Descripcion.ToLower().Contains(producto.ToLower())).ToList();
-            var listadoCategorias = obtenerCategorias();
+            var listadoCategorias = _categoriaDB.Listar();
             int registrosPorPagina = 8;
             int totalProductos = listaProductos.Count;
             int cantidadPaginas = Convert.ToInt32(Math.Ceiling((double)totalProductos / registrosPorPagina));
@@ -36,13 +45,13 @@ namespace VeterinariaWeb.Controllers
 
         public IActionResult Detail(int id)
         {
-            var productoBuscado = obtenerProductoPorId(id);
+            var productoBuscado = _productoDB.ObtenerPorId(id);
             return View(productoBuscado);
         }
 
         public IActionResult Create()
         {
-            var categorias = obtenerCategorias();
+            var categorias = _categoriaDB.Listar();
             ViewBag.Categorias = new SelectList(categorias, "ID", "Nombre");
             return View(new ProductoVM());
         }
@@ -51,7 +60,7 @@ namespace VeterinariaWeb.Controllers
         public IActionResult Create(ProductoVM model)
         {
             if (!ModelState.IsValid) { 
-                var categorias = obtenerCategorias();
+                var categorias = _categoriaDB.Listar();
                 ViewBag.Categorias = new SelectList(categorias, "ID", "Nombre");
                 return View(model);
             }
@@ -79,14 +88,14 @@ namespace VeterinariaWeb.Controllers
                 Imagen = $"assets/img/productos/{nombreImagen}"
             };
 
-            var exito = CrearProducto(producto);
+            var exito = _productoDB.Registrar(producto);
             return RedirectToAction("Index");
         }
 
         public IActionResult Edit(int id)
         {
-            var productoBuscado = obtenerProductoPorId(id);
-            var categorias = obtenerCategorias();
+            var productoBuscado = _productoDB.ObtenerPorId(id);
+            var categorias = _categoriaDB.Listar();
             ViewBag.Categorias = new SelectList(categorias, "ID", "Nombre");
             return View(productoBuscado);
         }
@@ -94,7 +103,7 @@ namespace VeterinariaWeb.Controllers
         [HttpPost]
         public IActionResult Edit(Producto producto)
         {
-            var exito = ActualizarProducto(producto);
+            var exito = _productoDB.Modificar(producto);
             if(exito)
                 return RedirectToAction("Detail", new { id = producto.ID});
             return View(producto);
@@ -102,7 +111,7 @@ namespace VeterinariaWeb.Controllers
 
         #region . Private methods .
 
-        private List<Producto> obtenerProductos()
+        /*private List<Producto> obtenerProductos()
         {
             var listaProductos = new List<Producto>();
             using (var conexion = new SqlConnection(cadenaConexion))
@@ -235,7 +244,7 @@ namespace VeterinariaWeb.Controllers
                 Nombre = lector.GetString(1),
                 Activo = lector.GetString(2),
             };
-        }
+        }*/
 
         #endregion
     }
